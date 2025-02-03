@@ -1,0 +1,111 @@
+SELECT *
+FROM layoffs_staging2;
+
+SELECT max(total_laid_off)
+	,Max(percentage_laid_off)
+FROM layoffs_staging2;
+
+SELECT max(total_laid_off)
+	,Max(percentage_laid_off)
+FROM layoffs_staging2
+WHERE percentage_laid_off = 1
+ORDER BY total_laid_off DESC
+	,funds_raised_millions DESC;
+
+SELECT company
+	,sum(total_laid_off)
+FROM Layoffs_staging2
+GROUP BY company
+ORDER BY 2 DESC;
+
+SELECT min(`date`)
+	,max(`date`)
+FROM layoff_staging2;
+
+SELECT industry
+	,sum(total_laid_off)
+FROM Layoffs_staging2
+GROUP BY industry
+ORDER BY 2 DESC;
+
+SELECT `date`
+	,sum(total_laid_off)
+FROM Layoffs_staging2
+GROUP BY `date`
+ORDER BY 1 DESC;
+
+SELECT year(`date`)
+	,sum(total_laid_off)
+FROM Layoffs_staging2
+GROUP BY year(`date`)
+ORDER BY 1 DESC;
+
+SELECT stage
+	,sum(total_laid_off)
+FROM Layoffs_staging2
+GROUP BY stage
+ORDER BY 1 DESC;
+
+SELECT company
+	,avg(percentage_laid_off)
+FROM Layoffs_staging2
+GROUP BY company
+ORDER BY 2 DESC;
+
+--Rolling sum
+SELECT substring(`date`, 1, 7) AS `Month`
+	,sum(total_laid_off)
+FROM layoffs_staging2
+WHERE substring(`date`, 1, 7) IS NOT NULL
+GROUP BY `Month`
+ORDER BY 1 ASC
+WITH Rolling_total AS (
+		SELECT substring(`date`, 1, 7) AS `Month`
+			,sum(total_laid_off) total_laid
+		FROM layoffs_staging2
+		WHERE substring(`date`, 1, 7) IS NOT NULL
+		GROUP BY `Month`
+		ORDER BY 1 ASC
+		)
+
+SELECT `Month`
+	,total_laid
+	,Sum(total_laid) OVER (
+		ORDER BY `Month`
+		) AS rolling_total
+FROM Rolling_total
+
+SELECT company
+	,Year(`date`)
+	,sum(total_laid_off)
+FROM Layoffs_staging2
+GROUP BY company
+	,Year(`date`)
+ORDER BY 3 DESC;
+
+WITH Compnay_year (
+	Company
+	,years
+	,total_laid_off
+	)
+AS (
+	SELECT company
+		,Year(`date`)
+		,sum(total_laid_off)
+	FROM Layoffs_staging2
+	GROUP BY company
+		,Year(`date`)
+	)
+	,company_year_rank
+AS (
+	SELECT *
+		,Dense_Rank() OVER (
+			PARTITION BY years ORDER BY total_laid_off DESC
+			) AS Ranking
+	FROM company_year
+	WHERE years IS NOT NULL
+	)
+SELECT *
+FROM company_year_rank
+WHERE ranking <= 5;
+
